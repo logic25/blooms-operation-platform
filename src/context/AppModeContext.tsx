@@ -192,6 +192,15 @@ interface AppModeContextType {
 
 const AppModeContext = createContext<AppModeContextType | null>(null);
 
+// Initial deliveries (historical record)
+const initialDeliveries: Delivery[] = [
+  { id: 'd1', flowerType: 'Red Roses', quantityStems: 100, receivedDate: new Date('2026-01-18'), vendorId: 'v1', costTotal: 240 },
+  { id: 'd2', flowerType: 'Pink Roses', quantityStems: 50, receivedDate: new Date('2026-01-18'), vendorId: 'v1', costTotal: 115 },
+  { id: 'd3', flowerType: 'Eucalyptus', quantityStems: 80, receivedDate: new Date('2026-01-19'), vendorId: 'v4', costTotal: 60 },
+  { id: 'd4', flowerType: "Baby's Breath", quantityStems: 100, receivedDate: new Date('2026-01-19'), vendorId: 'v2', costTotal: 25 },
+  { id: 'd5', flowerType: 'Carnations', quantityStems: 60, receivedDate: new Date('2026-01-20'), vendorId: 'v2', costTotal: 33 },
+];
+
 export function AppModeProvider({ children }: { children: ReactNode }) {
   const [mode, setMode] = useState<AppMode>('daily');
   const [activeEventId, setActiveEventId] = useState<string | null>(null);
@@ -199,6 +208,7 @@ export function AppModeProvider({ children }: { children: ReactNode }) {
   const [dailyOrders, setDailyOrders] = useState<DailyOrder[]>(initialDailyOrders);
   const [coolerInventory, setCoolerInventory] = useState<CoolerInventoryItem[]>(initialCoolerInventory);
   const [expectedDeliveries, setExpectedDeliveries] = useState<ExpectedDelivery[]>(initialExpectedDeliveries);
+  const [deliveries, setDeliveries] = useState<Delivery[]>(initialDeliveries);
   
   // Find upcoming event within planning window
   const { upcomingEvent, daysToUpcomingEvent } = useMemo(() => {
@@ -279,7 +289,15 @@ export function AppModeProvider({ children }: { children: ReactNode }) {
   const markDeliveryReceived = (id: string) => {
     const delivery = expectedDeliveries.find(d => d.id === id);
     if (delivery) {
-      // Add to cooler inventory when received
+      // Add to deliveries tracking when received
+      addDelivery({
+        flowerType: delivery.flowerType,
+        quantityStems: delivery.quantity,
+        receivedDate: new Date(),
+        vendorId: delivery.vendorId,
+      });
+      
+      // Also update cooler inventory
       updateInventoryQuantity(
         delivery.flowerType, 
         (coolerInventory.find(i => i.flowerType === delivery.flowerType)?.quantity || 0) + delivery.quantity
@@ -296,6 +314,55 @@ export function AppModeProvider({ children }: { children: ReactNode }) {
       id: `ed-${Date.now()}`,
     };
     setExpectedDeliveries(prev => [...prev, newDelivery]);
+  };
+  
+  // Deliveries tracking (auto-deduction system)
+  const addDelivery = (delivery: Omit<Delivery, 'id'>) => {
+    const newDelivery: Delivery = {
+      ...delivery,
+      id: `del-${Date.now()}`,
+    };
+    setDeliveries(prev => [...prev, newDelivery]);
+    
+    // Also update cooler inventory
+    updateInventoryQuantity(
+      delivery.flowerType,
+      (coolerInventory.find(i => i.flowerType === delivery.flowerType)?.quantity || 0) + delivery.quantityStems
+    );
+  };
+  
+  // Computed available inventory: SUM(deliveries) - SUM(pending orders × recipe quantities)
+  const getAvailableInventory = () => {
+    // Calculate total delivered by flower type
+    const deliveredByType: Record<string, number> = {};
+    deliveries.forEach(d => {
+      deliveredByType[d.flowerType] = (deliveredByType[d.flowerType] || 0) + d.quantityStems;
+    });
+    
+    // Calculate committed by flower type (pending orders × recipe quantities)
+    const committedByType: Record<string, number> = {};
+    dailyOrders
+      .filter(o => o.status !== 'fulfilled')
+      .forEach(order => {
+        const recipe = mockRecipes[order.productId] || [];
+        recipe.forEach(item => {
+          committedByType[item.flowerType] = (committedByType[item.flowerType] || 0) + (item.quantity * order.quantity);
+        });
+      });
+    
+    // Combine all flower types
+    const allFlowerTypes = new Set([...Object.keys(deliveredByType), ...Object.keys(committedByType)]);
+    
+    return Array.from(allFlowerTypes).map(flowerType => {
+      const delivered = deliveredByType[flowerType] || 0;
+      const committed = committedByType[flowerType] || 0;
+      return {
+        flowerType,
+        delivered,
+        committed,
+        available: delivered - committed,
+      };
+    }).sort((a, b) => a.available - b.available); // Sort by available (lowest first for warnings)
   };
   
   return (
@@ -320,6 +387,9 @@ export function AppModeProvider({ children }: { children: ReactNode }) {
       expectedDeliveries,
       markDeliveryReceived,
       addExpectedDelivery,
+      deliveries,
+      addDelivery,
+      getAvailableInventory,
     }}>
       {children}
     </AppModeContext.Provider>
