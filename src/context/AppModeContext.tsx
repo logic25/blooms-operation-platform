@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, ReactNode, useMemo } from 'react';
 import { differenceInDays } from 'date-fns';
-import type { AppMode, CustomEvent, DailyOrder, CoolerInventoryItem, ExpectedDelivery } from '@/types';
+import type { AppMode, CustomEvent, DailyOrder, CoolerInventoryItem, ExpectedDelivery, Delivery } from '@/types';
+import { mockRecipes } from '@/data/mockData';
 
 // Default events (holidays)
 const defaultEvents: CustomEvent[] = [
@@ -172,7 +173,7 @@ interface AppModeContextType {
   deleteDailyOrder: (id: string) => void;
   fulfillOrder: (id: string) => void;
   
-  // Cooler inventory
+  // Cooler inventory (raw physical counts - now computed)
   coolerInventory: CoolerInventoryItem[];
   updateInventoryQuantity: (flowerType: string, quantity: number) => void;
   
@@ -180,6 +181,13 @@ interface AppModeContextType {
   expectedDeliveries: ExpectedDelivery[];
   markDeliveryReceived: (id: string) => void;
   addExpectedDelivery: (delivery: Omit<ExpectedDelivery, 'id'>) => void;
+  
+  // Deliveries tracking (auto-deduction system)
+  deliveries: Delivery[];
+  addDelivery: (delivery: Omit<Delivery, 'id'>) => void;
+  
+  // Computed available inventory
+  getAvailableInventory: () => { flowerType: string; delivered: number; committed: number; available: number }[];
 }
 
 const AppModeContext = createContext<AppModeContextType | null>(null);

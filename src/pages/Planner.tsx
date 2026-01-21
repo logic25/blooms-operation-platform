@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calculator, TrendingUp, TrendingDown, Minus, AlertCircle, Package, Info, Flower2, DollarSign, Star, Check } from 'lucide-react';
+import { Calculator, TrendingUp, TrendingDown, Minus, AlertCircle, Package, Info, Flower2, DollarSign, Star, Check, Plus, X } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,9 +21,24 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { mockProducts, mockRecipes, mockProductionPlan, mockVendorInventory, mockVendors } from '@/data/mockData';
-import type { FlowerNeed, VendorInventory } from '@/types';
+import type { FlowerNeed, VendorInventory, Product } from '@/types';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -94,6 +109,24 @@ function VendorOption({ inventory, isSelected, onSelect }: {
 }
 
 export default function Planner() {
+  // Load saved products from localStorage or use mock data
+  const [products, setProducts] = useState<Product[]>(() => {
+    const saved = localStorage.getItem('blooms_products');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return parsed.map((p: Product) => ({
+          ...p,
+          createdAt: new Date(p.createdAt),
+          updatedAt: new Date(p.updatedAt),
+        }));
+      } catch {
+        return mockProducts;
+      }
+    }
+    return mockProducts;
+  });
+
   const [plannedQuantities, setPlannedQuantities] = useState<Record<string, number>>(() => {
     const initial: Record<string, number> = {};
     mockProductionPlan.items.forEach(item => {
@@ -104,10 +137,33 @@ export default function Planner() {
 
   const [showResults, setShowResults] = useState(true);
   const [selectedVendors, setSelectedVendors] = useState<Record<string, string>>({});
+  const [addProductDialogOpen, setAddProductDialogOpen] = useState(false);
+  const [selectedProductToAdd, setSelectedProductToAdd] = useState<string>('');
+
+  // Get active products that aren't already in the plan
+  const activeProducts = products.filter(p => p.isActive);
+  const productsInPlan = new Set(Object.keys(plannedQuantities).filter(id => plannedQuantities[id] > 0));
+  const availableToAdd = activeProducts.filter(p => !productsInPlan.has(p.id));
 
   const handleQuantityChange = (productId: string, value: string) => {
     const numValue = parseInt(value) || 0;
     setPlannedQuantities(prev => ({ ...prev, [productId]: numValue }));
+  };
+
+  const handleAddProductToPlan = () => {
+    if (selectedProductToAdd) {
+      setPlannedQuantities(prev => ({ ...prev, [selectedProductToAdd]: 1 }));
+      setSelectedProductToAdd('');
+      setAddProductDialogOpen(false);
+    }
+  };
+
+  const handleRemoveFromPlan = (productId: string) => {
+    setPlannedQuantities(prev => {
+      const next = { ...prev };
+      delete next[productId];
+      return next;
+    });
   };
 
   // Calculate flower needs
@@ -118,7 +174,7 @@ export default function Planner() {
       if (quantity <= 0) return;
       
       const recipe = mockRecipes[productId] || [];
-      const product = mockProducts.find(p => p.id === productId);
+      const product = products.find(p => p.id === productId);
       
       recipe.forEach(item => {
         if (!needsMap[item.flowerType]) {
@@ -142,7 +198,7 @@ export default function Planner() {
     });
 
     return Object.values(needsMap).sort((a, b) => b.totalStems - a.totalStems);
-  }, [plannedQuantities]);
+  }, [plannedQuantities, products]);
 
   const totalUnits = Object.values(plannedQuantities).reduce((sum, qty) => sum + qty, 0);
   const totalStems = flowerNeeds.reduce((sum, need) => sum + Math.ceil(need.totalStems * 1.05), 0);
@@ -166,6 +222,11 @@ export default function Planner() {
   const handleSelectVendor = (flowerType: string, vendorId: string) => {
     setSelectedVendors(prev => ({ ...prev, [flowerType]: vendorId }));
   };
+
+  // Products that are in the planning (have quantities set)
+  const plannedProducts = activeProducts.filter(p => 
+    plannedQuantities[p.id] !== undefined && plannedQuantities[p.id] >= 0
+  );
 
   return (
     <div className="p-4 lg:p-6">
@@ -250,13 +311,21 @@ export default function Planner() {
           <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-4">
             <Card className="border-border/50">
               <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 font-display text-xl">
-                  <Package className="h-5 w-5 text-primary" />
-                  Planned Quantities
-                </CardTitle>
-                <CardDescription>
-                  Enter how many of each arrangement you plan to make
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2 font-display text-xl">
+                      <Package className="h-5 w-5 text-primary" />
+                      Planned Quantities
+                    </CardTitle>
+                    <CardDescription>
+                      Enter how many of each arrangement you plan to make
+                    </CardDescription>
+                  </div>
+                  <Button onClick={() => setAddProductDialogOpen(true)} size="sm">
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Product
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="rounded-lg border">
@@ -267,15 +336,17 @@ export default function Planner() {
                         <TableHead className="text-center">Last Year</TableHead>
                         <TableHead className="text-center">Planned</TableHead>
                         <TableHead className="text-center">Change</TableHead>
+                        <TableHead className="w-12"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {mockProducts.filter(p => p.isActive).map((product, index) => {
+                      {plannedProducts.map((product, index) => {
                         const planItem = mockProductionPlan.items.find(i => i.productId === product.id);
                         const lastYear = planItem?.lastYearQuantity || 0;
                         const planned = plannedQuantities[product.id] || 0;
                         const changePercent = lastYear > 0 ? ((planned - lastYear) / lastYear) * 100 : 0;
                         const isSignificantChange = Math.abs(changePercent) > 30;
+                        const isNewToPlanning = !planItem;
 
                         return (
                           <motion.tr
@@ -293,13 +364,20 @@ export default function Planner() {
                                   />
                                 </div>
                                 <div className="min-w-0">
-                                  <p className="truncate font-medium">{product.name}</p>
+                                  <div className="flex items-center gap-2">
+                                    <p className="truncate font-medium">{product.name}</p>
+                                    {isNewToPlanning && (
+                                      <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-700">
+                                        New
+                                      </Badge>
+                                    )}
+                                  </div>
                                   <p className="text-xs text-muted-foreground">${product.price}</p>
                                 </div>
                               </div>
                             </TableCell>
                             <TableCell className="text-center">
-                              <span className="text-muted-foreground">{lastYear}</span>
+                              <span className="text-muted-foreground">{lastYear || '-'}</span>
                             </TableCell>
                             <TableCell className="text-center">
                               <Input
@@ -346,9 +424,27 @@ export default function Planner() {
                                 <span className="text-xs text-muted-foreground">New</span>
                               )}
                             </TableCell>
+                            <TableCell>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => handleRemoveFromPlan(product.id)}
+                              >
+                                <X className="h-4 w-4 text-muted-foreground" />
+                              </Button>
+                            </TableCell>
                           </motion.tr>
                         );
                       })}
+                      
+                      {plannedProducts.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                            No products in plan. Click "Add Product" to get started.
+                          </TableCell>
+                        </TableRow>
+                      )}
                     </TableBody>
                   </Table>
                 </div>
@@ -402,31 +498,25 @@ export default function Planner() {
                               {withBuffer} stems
                             </Badge>
                           </div>
-                          <Progress value={percentage} className="h-1.5 mb-3" />
                           
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <p className="cursor-help text-xs text-muted-foreground mb-3">
-                                  From {need.stemsByProduct.length} product{need.stemsByProduct.length > 1 ? 's' : ''} • Click for breakdown
-                                </p>
-                              </TooltipTrigger>
-                              <TooltipContent side="bottom" className="max-w-xs">
-                                <div className="space-y-1 text-xs">
-                                  {need.stemsByProduct.map(item => (
-                                    <p key={item.productId}>
-                                      {item.productName}: {item.quantity} × {item.stemsPerUnit} = {item.totalStems}
-                                    </p>
-                                  ))}
-                                </div>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
+                          <Progress value={percentage} className="h-2 mb-3" />
+                          
+                          {/* Breakdown */}
+                          <div className="mb-3 text-xs text-muted-foreground space-y-0.5">
+                            {need.stemsByProduct.map(bp => (
+                              <div key={bp.productId} className="flex justify-between">
+                                <span>{bp.productName}</span>
+                                <span>{bp.quantity} × {bp.stemsPerUnit} = {bp.totalStems}</span>
+                              </div>
+                            ))}
+                          </div>
 
-                          {/* Vendor Options */}
+                          <Separator className="my-3" />
+
+                          {/* Vendor Selection */}
                           {vendorOptions.length > 0 ? (
                             <div className="space-y-2">
-                              <p className="text-xs font-medium text-muted-foreground">Select Vendor:</p>
+                              <p className="text-xs font-medium text-muted-foreground">Select Vendor</p>
                               {vendorOptions.map(inv => (
                                 <VendorOption
                                   key={inv.id}
@@ -437,8 +527,8 @@ export default function Planner() {
                               ))}
                             </div>
                           ) : (
-                            <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
-                              ⚠️ No vendor carries this flower
+                            <p className="text-xs text-muted-foreground italic">
+                              No vendor pricing available for this flower
                             </p>
                           )}
                         </motion.div>
@@ -451,6 +541,56 @@ export default function Planner() {
           </div>
         </div>
       </motion.div>
+
+      {/* Add Product to Plan Dialog */}
+      <Dialog open={addProductDialogOpen} onOpenChange={setAddProductDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Product to Plan</DialogTitle>
+            <DialogDescription>
+              Select a product from your catalog to add to this event's production plan.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {availableToAdd.length === 0 ? (
+            <div className="py-8 text-center text-muted-foreground">
+              <Package className="h-12 w-12 mx-auto mb-3 opacity-30" />
+              <p>All your products are already in the plan!</p>
+              <p className="text-sm mt-1">Create new products in the Products tab.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <Select value={selectedProductToAdd} onValueChange={setSelectedProductToAdd}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a product..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableToAdd.map(product => (
+                    <SelectItem key={product.id} value={product.id}>
+                      <div className="flex items-center gap-2">
+                        <span>{product.name}</span>
+                        <span className="text-muted-foreground">${product.price}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddProductDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleAddProductToPlan}
+              disabled={!selectedProductToAdd}
+            >
+              Add to Plan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

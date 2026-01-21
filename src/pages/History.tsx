@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { History as HistoryIcon, TrendingUp, DollarSign, Package, Flower2, Star, Filter } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -57,26 +57,39 @@ export default function History() {
   const [selectedEvent, setSelectedEvent] = useState<string>("Valentine's Day 2025");
   const [viewMode, setViewMode] = useState<'flowers' | 'vendors'>('flowers');
 
-  const eventFlowerData = mockFlowerSalesHistory.filter(f => f.event === selectedEvent);
-  const eventVendorData = mockFlowerHistory.filter(f => f.event === selectedEvent);
+  // Filter data based on selected event - using useMemo for proper reactivity
+  const eventFlowerData = useMemo(() => {
+    return mockFlowerSalesHistory.filter(f => f.event === selectedEvent);
+  }, [selectedEvent]);
 
-  // Group vendor data by vendor
-  const vendorPerformance = mockVendors.map(vendor => {
-    const vendorHistory = eventVendorData.filter(h => h.vendorId === vendor.id);
-    const avgQuality = vendorHistory.length > 0 
-      ? vendorHistory.reduce((sum, h) => sum + h.qualityScore, 0) / vendorHistory.length 
-      : 0;
-    const flowersSupplied = vendorHistory.map(h => h.flowerType);
-    return {
-      vendor,
-      avgQuality,
-      flowersSupplied,
-      history: vendorHistory,
-    };
-  }).filter(v => v.history.length > 0);
+  const eventVendorData = useMemo(() => {
+    return mockFlowerHistory.filter(f => f.event === selectedEvent);
+  }, [selectedEvent]);
 
-  const totalStems = eventFlowerData.reduce((sum, f) => sum + f.totalStems, 0);
-  const totalCost = eventFlowerData.reduce((sum, f) => sum + f.totalCost, 0);
+  // Group vendor data by vendor - recalculated when selectedEvent changes
+  const vendorPerformance = useMemo(() => {
+    return mockVendors.map(vendor => {
+      const vendorHistory = eventVendorData.filter(h => h.vendorId === vendor.id);
+      const avgQuality = vendorHistory.length > 0 
+        ? vendorHistory.reduce((sum, h) => sum + h.qualityScore, 0) / vendorHistory.length 
+        : 0;
+      const flowersSupplied = vendorHistory.map(h => h.flowerType);
+      return {
+        vendor,
+        avgQuality,
+        flowersSupplied,
+        history: vendorHistory,
+      };
+    }).filter(v => v.history.length > 0);
+  }, [eventVendorData]);
+
+  const totalStems = useMemo(() => {
+    return eventFlowerData.reduce((sum, f) => sum + f.totalStems, 0);
+  }, [eventFlowerData]);
+
+  const totalCost = useMemo(() => {
+    return eventFlowerData.reduce((sum, f) => sum + f.totalCost, 0);
+  }, [eventFlowerData]);
 
   return (
     <div className="p-4 lg:p-6">
@@ -89,7 +102,7 @@ export default function History() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="font-display text-3xl font-bold tracking-tight text-foreground lg:text-4xl">
-              History
+              Insights
             </h1>
             <p className="mt-1 text-muted-foreground">
               Review past events by flower type and vendor performance
@@ -108,7 +121,7 @@ export default function History() {
                 <Filter className="h-5 w-5 text-muted-foreground" />
                 <Select value={selectedEvent} onValueChange={setSelectedEvent}>
                   <SelectTrigger className="w-[220px]">
-                    <SelectValue />
+                    <SelectValue placeholder="Select event" />
                   </SelectTrigger>
                   <SelectContent>
                     {events.map(event => (
@@ -156,6 +169,7 @@ export default function History() {
               variants={containerVariants}
               initial="hidden"
               animate="visible"
+              key={selectedEvent} // Re-animate when event changes
               className="space-y-4"
             >
               <Card className="border-border/50">
@@ -180,7 +194,7 @@ export default function History() {
                       </TableHeader>
                       <TableBody>
                         {eventFlowerData.map((flower, index) => (
-                          <motion.tr key={flower.flowerType} variants={itemVariants}>
+                          <motion.tr key={`${selectedEvent}-${flower.flowerType}`} variants={itemVariants}>
                             <TableCell>
                               <div className="flex items-center gap-2">
                                 <Flower2 className="h-4 w-4 text-primary" />
@@ -214,7 +228,7 @@ export default function History() {
 
                   {eventFlowerData.length === 0 && (
                     <div className="py-8 text-center text-muted-foreground">
-                      No flower data for this event yet.
+                      No flower data for {selectedEvent} yet.
                     </div>
                   )}
                 </CardContent>
@@ -228,10 +242,11 @@ export default function History() {
               variants={containerVariants}
               initial="hidden"
               animate="visible"
+              key={`vendors-${selectedEvent}`} // Re-animate when event changes
               className="grid gap-4 sm:grid-cols-2"
             >
               {vendorPerformance.map((vp) => (
-                <motion.div key={vp.vendor.id} variants={itemVariants}>
+                <motion.div key={`${selectedEvent}-${vp.vendor.id}`} variants={itemVariants}>
                   <Card className="border-border/50 h-full">
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
@@ -288,81 +303,83 @@ export default function History() {
 
               {vendorPerformance.length === 0 && (
                 <div className="col-span-2 py-8 text-center text-muted-foreground">
-                  No vendor data for this event yet.
+                  No vendor data for {selectedEvent} yet.
                 </div>
               )}
             </motion.div>
           </TabsContent>
         </Tabs>
 
-        {/* Year over Year Comparison */}
-        <motion.div variants={itemVariants}>
-          <Card className="border-border/50">
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-peach-light">
-                  <TrendingUp className="h-5 w-5 text-peach" />
+        {/* Year over Year Comparison - Only show for Valentine's events */}
+        {selectedEvent.includes("Valentine's") && (
+          <motion.div variants={itemVariants}>
+            <Card className="border-border/50">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-peach-light">
+                    <TrendingUp className="h-5 w-5 text-peach" />
+                  </div>
+                  <div>
+                    <CardTitle className="font-display text-xl">Year-over-Year: Valentine's Day</CardTitle>
+                    <CardDescription>Flower usage growth comparison</CardDescription>
+                  </div>
                 </div>
-                <div>
-                  <CardTitle className="font-display text-xl">Year-over-Year: Valentine's Day</CardTitle>
-                  <CardDescription>Flower usage growth comparison</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-lg border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="hover:bg-transparent">
+                        <TableHead>Flower Type</TableHead>
+                        <TableHead className="text-center">V-Day 2024</TableHead>
+                        <TableHead className="text-center">V-Day 2025</TableHead>
+                        <TableHead className="text-center">Growth</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {['Red Roses', 'Pink Roses'].map(flowerType => {
+                        const data2024 = mockFlowerSalesHistory.find(f => f.flowerType === flowerType && f.event === "Valentine's Day 2024");
+                        const data2025 = mockFlowerSalesHistory.find(f => f.flowerType === flowerType && f.event === "Valentine's Day 2025");
+                        const growth = data2024 && data2025 
+                          ? ((data2025.totalStems - data2024.totalStems) / data2024.totalStems * 100)
+                          : 0;
+
+                        return (
+                          <TableRow key={flowerType}>
+                            <TableCell className="font-medium">{flowerType}</TableCell>
+                            <TableCell className="text-center text-muted-foreground">
+                              {data2024?.totalStems.toLocaleString() || '-'}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {data2025?.totalStems.toLocaleString() || '-'}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {growth !== 0 && (
+                                <Badge
+                                  variant="secondary"
+                                  className={growth > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}
+                                >
+                                  {growth > 0 ? '+' : ''}{growth.toFixed(0)}%
+                                </Badge>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-lg border">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="hover:bg-transparent">
-                      <TableHead>Flower Type</TableHead>
-                      <TableHead className="text-center">V-Day 2024</TableHead>
-                      <TableHead className="text-center">V-Day 2025</TableHead>
-                      <TableHead className="text-center">Growth</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {['Red Roses', 'Pink Roses'].map(flowerType => {
-                      const data2024 = mockFlowerSalesHistory.find(f => f.flowerType === flowerType && f.event === "Valentine's Day 2024");
-                      const data2025 = mockFlowerSalesHistory.find(f => f.flowerType === flowerType && f.event === "Valentine's Day 2025");
-                      const growth = data2024 && data2025 
-                        ? ((data2025.totalStems - data2024.totalStems) / data2024.totalStems * 100)
-                        : 0;
 
-                      return (
-                        <TableRow key={flowerType}>
-                          <TableCell className="font-medium">{flowerType}</TableCell>
-                          <TableCell className="text-center text-muted-foreground">
-                            {data2024?.totalStems.toLocaleString() || '-'}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {data2025?.totalStems.toLocaleString() || '-'}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {growth !== 0 && (
-                              <Badge
-                                variant="secondary"
-                                className={growth > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}
-                              >
-                                {growth > 0 ? '+' : ''}{growth.toFixed(0)}%
-                              </Badge>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-
-              <div className="mt-4 rounded-lg bg-sage-light/50 p-4">
-                <p className="text-sm text-sage">
-                  <strong>Insight:</strong> Red Roses grew 12.5% year-over-year for Valentine's Day. 
-                  NH Blossom Wholesale consistently delivers the best rose quality.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+                <div className="mt-4 rounded-lg bg-sage-light/50 p-4">
+                  <p className="text-sm text-sage">
+                    <strong>Insight:</strong> Red Roses grew 12.5% year-over-year for Valentine's Day. 
+                    NH Blossom Wholesale consistently delivers the best rose quality.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
       </motion.div>
     </div>
   );
