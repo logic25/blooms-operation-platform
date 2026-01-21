@@ -100,6 +100,71 @@ export interface SalesHistory {
   revenue?: number;
 }
 
+// ===== NEW TYPES FOR DUAL-MODE SYSTEM =====
+
+// App mode
+export type AppMode = 'daily' | 'event';
+
+// Daily customer order
+export interface DailyOrder {
+  id: string;
+  productId: string;
+  quantity: number;
+  deliveryDate: Date;
+  customerName?: string;
+  notes?: string;
+  status: 'pending' | 'fulfilled';
+  createdAt: Date;
+  eventId?: string; // if associated with an event
+}
+
+// Cooler inventory item
+export interface CoolerInventoryItem {
+  id: string;
+  flowerType: string;
+  quantity: number;
+  lastUpdated: Date;
+}
+
+// Shopping list item (calculated)
+export interface ShoppingListItem {
+  flowerType: string;
+  needed: number;
+  inStock: number;
+  toBuy: number;
+  purchased: boolean;
+}
+
+// Custom event configuration
+export interface CustomEvent {
+  id: string;
+  name: string;
+  eventDate: Date;
+  planningWindowDays: number; // how many days before to show banner
+  isActive: boolean;
+  isRecurring: boolean;
+  recurrenceRule?: string; // e.g., "2nd Sunday of May"
+}
+
+// Expected delivery (flowers ordered but not yet received)
+export interface ExpectedDelivery {
+  id: string;
+  vendorId: string;
+  flowerType: string;
+  quantity: number;
+  orderDate: Date;
+  expectedDate: Date;
+  received: boolean;
+  eventId?: string;
+}
+
+// User preferences
+export interface UserPreferences {
+  currentMode: AppMode;
+  activeEventId?: string;
+  defaultPlanningWindow: number;
+}
+
 // UI-specific types
 export type StatusType = 'urgent' | 'warning' | 'success' | 'neutral';
 
