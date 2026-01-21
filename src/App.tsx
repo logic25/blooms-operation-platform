@@ -12,7 +12,8 @@ import Products from "./pages/Products";
 import Flowers from "./pages/Flowers";
 import Vendors from "./pages/Vendors";
 import Planner from "./pages/Planner";
-import Orders from "./pages/Orders";
+import CustomerOrders from "./pages/CustomerOrders";
+import VendorOrders from "./pages/VendorOrders";
 import History from "./pages/History";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
@@ -36,7 +37,8 @@ function AppContent() {
         <AppLayout>
           <Routes>
             <Route path="/" element={<Dashboard />} />
-            <Route path="/orders" element={<Orders />} />
+            <Route path="/orders" element={<CustomerOrders />} />
+            <Route path="/vendor-orders" element={<VendorOrders />} />
             <Route path="/products" element={<Products />} />
             <Route path="/flowers" element={<Flowers />} />
             <Route path="/vendors" element={<Vendors />} />
