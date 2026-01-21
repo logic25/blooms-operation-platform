@@ -9,6 +9,7 @@ import { OnboardingProvider, useOnboarding } from "@/context/OnboardingContext";
 import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
+import Flowers from "./pages/Flowers";
 import Vendors from "./pages/Vendors";
 import Planner from "./pages/Planner";
 import Orders from "./pages/Orders";
@@ -35,10 +36,11 @@ function AppContent() {
         <AppLayout>
           <Routes>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/orders" element={<Orders />} />
             <Route path="/products" element={<Products />} />
+            <Route path="/flowers" element={<Flowers />} />
             <Route path="/vendors" element={<Vendors />} />
             <Route path="/planner" element={<Planner />} />
-            <Route path="/orders" element={<Orders />} />
             <Route path="/history" element={<History />} />
             <Route path="/settings" element={<Settings />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

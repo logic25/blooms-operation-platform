@@ -1,26 +1,21 @@
-import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  LayoutDashboard,
+  CalendarDays,
+  ShoppingCart,
   Package,
+  Flower2,
   Users,
   ClipboardList,
-  ShoppingCart,
-  History,
+  BarChart3,
   Settings,
-  Flower2,
-  Menu,
-  X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -29,21 +24,19 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 
-const mainNavItems = [
-  { title: 'Dashboard', url: '/', icon: LayoutDashboard },
-  { title: 'Products', url: '/products', icon: Package },
-  { title: 'Vendors', url: '/vendors', icon: Users },
-];
-
-const planningNavItems = [
-  { title: 'Production Planner', url: '/planner', icon: ClipboardList },
+const navItems = [
+  { title: 'Today', url: '/', icon: CalendarDays },
   { title: 'Orders', url: '/orders', icon: ShoppingCart },
-  { title: 'History', url: '/history', icon: History },
+  { title: 'Products', url: '/products', icon: Package },
+  { title: 'Flowers', url: '/flowers', icon: Flower2 },
+  { title: 'Vendors', url: '/vendors', icon: Users },
+  { title: 'Planning', url: '/planner', icon: ClipboardList },
+  { title: 'Insights', url: '/history', icon: BarChart3 },
 ];
 
 export function AppSidebar() {
   const location = useLocation();
-  const { state, toggleSidebar } = useSidebar();
+  const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
 
   const isActive = (path: string) => location.pathname === path;
@@ -72,48 +65,9 @@ export function AppSidebar() {
 
       <SidebarContent className="px-2">
         <SidebarGroup>
-          {!isCollapsed && (
-            <SidebarGroupLabel className="px-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Main
-            </SidebarGroupLabel>
-          )}
           <SidebarGroupContent>
             <SidebarMenu>
-              {mainNavItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive(item.url)}
-                    tooltip={isCollapsed ? item.title : undefined}
-                  >
-                    <NavLink
-                      to={item.url}
-                      className={cn(
-                        'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all',
-                        isActive(item.url)
-                          ? 'bg-primary text-primary-foreground'
-                          : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
-                      )}
-                    >
-                      <item.icon className="h-5 w-5 shrink-0" />
-                      {!isCollapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup className="mt-4">
-          {!isCollapsed && (
-            <SidebarGroupLabel className="px-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Planning
-            </SidebarGroupLabel>
-          )}
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {planningNavItems.map((item) => (
+              {navItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
