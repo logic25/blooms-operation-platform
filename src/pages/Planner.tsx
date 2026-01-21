@@ -127,13 +127,8 @@ export default function Planner() {
     return mockProducts;
   });
 
-  const [plannedQuantities, setPlannedQuantities] = useState<Record<string, number>>(() => {
-    const initial: Record<string, number> = {};
-    mockProductionPlan.items.forEach(item => {
-      initial[item.productId] = item.plannedQuantity;
-    });
-    return initial;
-  });
+  // Start with empty plan - user adds products as needed
+  const [plannedQuantities, setPlannedQuantities] = useState<Record<string, number>>({});
 
   const [showResults, setShowResults] = useState(true);
   const [selectedVendors, setSelectedVendors] = useState<Record<string, string>>({});
