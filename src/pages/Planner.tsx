@@ -1,11 +1,12 @@
 import { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { Calculator, TrendingUp, TrendingDown, Minus, AlertCircle, Package, Info } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Calculator, TrendingUp, TrendingDown, Minus, AlertCircle, Package, Info, Flower2, DollarSign, Star, Check } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Separator } from '@/components/ui/separator';
 import {
   Table,
   TableBody,
@@ -21,8 +22,8 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
-import { mockProducts, mockRecipes, mockProductionPlan } from '@/data/mockData';
-import type { FlowerNeed } from '@/types';
+import { mockProducts, mockRecipes, mockProductionPlan, mockVendorInventory, mockVendors } from '@/data/mockData';
+import type { FlowerNeed, VendorInventory } from '@/types';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -37,6 +38,61 @@ const itemVariants = {
   visible: { opacity: 1, y: 0 },
 };
 
+function RatingStars({ rating }: { rating: number }) {
+  return (
+    <div className="flex gap-0.5">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <Star
+          key={star}
+          className={cn(
+            'h-3 w-3',
+            star <= rating ? 'fill-amber-400 text-amber-400' : 'text-muted'
+          )}
+        />
+      ))}
+    </div>
+  );
+}
+
+function VendorOption({ inventory, isSelected, onSelect }: { 
+  inventory: VendorInventory; 
+  isSelected: boolean;
+  onSelect: () => void;
+}) {
+  const vendor = mockVendors.find(v => v.id === inventory.vendorId);
+  
+  return (
+    <motion.button
+      initial={{ opacity: 0, x: -10 }}
+      animate={{ opacity: 1, x: 0 }}
+      onClick={onSelect}
+      className={cn(
+        'w-full flex items-center gap-3 rounded-lg border p-3 text-left transition-all',
+        isSelected 
+          ? 'border-primary bg-primary/5 ring-1 ring-primary' 
+          : 'hover:bg-muted/50'
+      )}
+    >
+      {isSelected && (
+        <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary">
+          <Check className="h-3 w-3 text-primary-foreground" />
+        </div>
+      )}
+      <div className="flex-1 min-w-0">
+        <p className="font-medium truncate">{vendor?.name}</p>
+        <div className="flex items-center gap-2 mt-0.5">
+          <RatingStars rating={inventory.qualityRating} />
+          <span className="text-xs text-muted-foreground">Quality</span>
+        </div>
+      </div>
+      <div className="text-right shrink-0">
+        <p className="font-medium">${inventory.peakPrice.toFixed(2)}/stem</p>
+        <p className="text-xs text-muted-foreground">{vendor?.leadTimeDays}d lead</p>
+      </div>
+    </motion.button>
+  );
+}
+
 export default function Planner() {
   const [plannedQuantities, setPlannedQuantities] = useState<Record<string, number>>(() => {
     const initial: Record<string, number> = {};
@@ -46,7 +102,8 @@ export default function Planner() {
     return initial;
   });
 
-  const [showResults, setShowResults] = useState(false);
+  const [showResults, setShowResults] = useState(true);
+  const [selectedVendors, setSelectedVendors] = useState<Record<string, string>>({});
 
   const handleQuantityChange = (productId: string, value: string) => {
     const numValue = parseInt(value) || 0;
@@ -88,6 +145,27 @@ export default function Planner() {
   }, [plannedQuantities]);
 
   const totalUnits = Object.values(plannedQuantities).reduce((sum, qty) => sum + qty, 0);
+  const totalStems = flowerNeeds.reduce((sum, need) => sum + Math.ceil(need.totalStems * 1.05), 0);
+  
+  // Calculate total cost estimate
+  const totalCost = useMemo(() => {
+    return flowerNeeds.reduce((sum, need) => {
+      const vendorId = selectedVendors[need.flowerType];
+      const inventory = mockVendorInventory.find(i => i.flowerType === need.flowerType && i.vendorId === vendorId);
+      if (inventory) {
+        return sum + (Math.ceil(need.totalStems * 1.05) * inventory.peakPrice);
+      }
+      // Use cheapest option if no vendor selected
+      const cheapest = mockVendorInventory
+        .filter(i => i.flowerType === need.flowerType)
+        .sort((a, b) => a.peakPrice - b.peakPrice)[0];
+      return sum + (Math.ceil(need.totalStems * 1.05) * (cheapest?.peakPrice || 0));
+    }, 0);
+  }, [flowerNeeds, selectedVendors]);
+
+  const handleSelectVendor = (flowerType: string, vendorId: string) => {
+    setSelectedVendors(prev => ({ ...prev, [flowerType]: vendorId }));
+  };
 
   return (
     <div className="p-4 lg:p-6">
@@ -111,9 +189,65 @@ export default function Planner() {
           </Badge>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-5">
+        {/* Summary Cards */}
+        <div className="grid gap-4 sm:grid-cols-4">
+          <Card className="border-border/50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sage-light">
+                  <Package className="h-5 w-5 text-sage" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Arrangements</p>
+                  <p className="font-display text-2xl font-bold">{totalUnits}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-border/50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-light">
+                  <Flower2 className="h-5 w-5 text-rose" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Stems</p>
+                  <p className="font-display text-2xl font-bold">{totalStems.toLocaleString()}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-border/50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-peach-light">
+                  <Calculator className="h-5 w-5 text-peach" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Flower Types</p>
+                  <p className="font-display text-2xl font-bold">{flowerNeeds.length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-border/50 bg-gradient-to-br from-sage-light/50 to-sage-light">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sage">
+                  <DollarSign className="h-5 w-5 text-primary-foreground" />
+                </div>
+                <div>
+                  <p className="text-sm text-sage">Est. Flower Cost</p>
+                  <p className="font-display text-2xl font-bold text-sage">${totalCost.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid gap-6 xl:grid-cols-2">
           {/* Planning Input */}
-          <motion.div variants={containerVariants} initial="hidden" animate="visible" className="lg:col-span-3 space-y-4">
+          <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-4">
             <Card className="border-border/50">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 font-display text-xl">
@@ -218,33 +352,20 @@ export default function Planner() {
                     </TableBody>
                   </Table>
                 </div>
-
-                <div className="mt-4 flex items-center justify-between">
-                  <div className="text-sm text-muted-foreground">
-                    Total: <span className="font-semibold text-foreground">{totalUnits}</span> arrangements
-                  </div>
-                  <Button onClick={() => setShowResults(true)} className="bg-primary hover:bg-primary/90">
-                    <Calculator className="mr-2 h-4 w-4" />
-                    Calculate Needs
-                  </Button>
-                </div>
               </CardContent>
             </Card>
           </motion.div>
 
           {/* Results Panel */}
-          <div className="lg:col-span-2">
-            <Card className={cn(
-              'sticky top-20 border-border/50 transition-all',
-              showResults ? 'ring-2 ring-primary/20' : ''
-            )}>
+          <div className="space-y-4">
+            <Card className="border-border/50">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 font-display text-xl">
                   <Calculator className="h-5 w-5 text-primary" />
-                  Flower Needs
+                  Flower Needs by Type
                 </CardTitle>
                 <CardDescription>
-                  Aggregated totals with 5% waste buffer
+                  Aggregated totals with 5% waste buffer • Select preferred vendor for each
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -252,15 +373,17 @@ export default function Planner() {
                   <div className="flex flex-col items-center justify-center py-8 text-center">
                     <Info className="h-10 w-10 text-muted-foreground/50" />
                     <p className="mt-3 text-sm text-muted-foreground">
-                      Enter quantities and click calculate to see your flower needs
+                      Enter quantities above to see your flower needs
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
                     {flowerNeeds.map((need, index) => {
                       const withBuffer = Math.ceil(need.totalStems * 1.05);
                       const maxStems = Math.max(...flowerNeeds.map(n => n.totalStems));
                       const percentage = (need.totalStems / maxStems) * 100;
+                      const vendorOptions = mockVendorInventory.filter(i => i.flowerType === need.flowerType);
+                      const selectedVendorId = selectedVendors[need.flowerType];
 
                       return (
                         <motion.div
@@ -268,24 +391,27 @@ export default function Planner() {
                           initial={{ opacity: 0, x: 10 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: index * 0.05 }}
-                          className="rounded-lg border p-3"
+                          className="rounded-xl border p-4"
                         >
-                          <div className="flex items-center justify-between">
-                            <span className="font-medium">{need.flowerType}</span>
-                            <span className="font-display text-lg font-bold">{withBuffer}</span>
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <Flower2 className="h-4 w-4 text-primary" />
+                              <span className="font-medium">{need.flowerType}</span>
+                            </div>
+                            <Badge variant="secondary" className="bg-sage-light text-sage font-display text-lg">
+                              {withBuffer} stems
+                            </Badge>
                           </div>
-                          <div className="mt-2 flex items-center gap-2">
-                            <Progress value={percentage} className="h-1.5 flex-1" />
-                            <span className="text-xs text-muted-foreground">stems</span>
-                          </div>
+                          <Progress value={percentage} className="h-1.5 mb-3" />
+                          
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <p className="mt-1 cursor-help text-xs text-muted-foreground">
-                                  From {need.stemsByProduct.length} product{need.stemsByProduct.length > 1 ? 's' : ''}
+                                <p className="cursor-help text-xs text-muted-foreground mb-3">
+                                  From {need.stemsByProduct.length} product{need.stemsByProduct.length > 1 ? 's' : ''} • Click for breakdown
                                 </p>
                               </TooltipTrigger>
-                              <TooltipContent side="left" className="max-w-xs">
+                              <TooltipContent side="bottom" className="max-w-xs">
                                 <div className="space-y-1 text-xs">
                                   {need.stemsByProduct.map(item => (
                                     <p key={item.productId}>
@@ -296,15 +422,28 @@ export default function Planner() {
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
+
+                          {/* Vendor Options */}
+                          {vendorOptions.length > 0 ? (
+                            <div className="space-y-2">
+                              <p className="text-xs font-medium text-muted-foreground">Select Vendor:</p>
+                              {vendorOptions.map(inv => (
+                                <VendorOption
+                                  key={inv.id}
+                                  inventory={inv}
+                                  isSelected={selectedVendorId === inv.vendorId}
+                                  onSelect={() => handleSelectVendor(need.flowerType, inv.vendorId)}
+                                />
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
+                              ⚠️ No vendor carries this flower
+                            </p>
+                          )}
                         </motion.div>
                       );
                     })}
-
-                    <div className="mt-4 rounded-lg bg-muted/50 p-3 text-center">
-                      <p className="text-xs text-muted-foreground">
-                        Totals include 5% waste buffer
-                      </p>
-                    </div>
                   </div>
                 )}
               </CardContent>
