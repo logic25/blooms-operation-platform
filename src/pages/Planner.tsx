@@ -38,7 +38,7 @@ import {
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { mockProducts, mockRecipes, mockProductionPlan, mockVendorInventory, mockVendors } from '@/data/mockData';
-import type { FlowerNeed, VendorInventory, Product } from '@/types';
+import type { FlowerNeed, VendorInventory, Product, RecipeItem } from '@/types';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -127,6 +127,19 @@ export default function Planner() {
     return mockProducts;
   });
 
+  // Load saved recipes from localStorage or use mock data
+  const [recipes, setRecipes] = useState<Record<string, RecipeItem[]>>(() => {
+    const saved = localStorage.getItem('blooms_recipes');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return mockRecipes;
+      }
+    }
+    return mockRecipes;
+  });
+
   // Start with empty plan - user adds products as needed
   const [plannedQuantities, setPlannedQuantities] = useState<Record<string, number>>({});
 
@@ -168,7 +181,8 @@ export default function Planner() {
     Object.entries(plannedQuantities).forEach(([productId, quantity]) => {
       if (quantity <= 0) return;
       
-      const recipe = mockRecipes[productId] || [];
+      // Use recipes from state (which loads from localStorage or falls back to mockRecipes)
+      const recipe = recipes[productId] || [];
       const product = products.find(p => p.id === productId);
       
       recipe.forEach(item => {
@@ -193,7 +207,7 @@ export default function Planner() {
     });
 
     return Object.values(needsMap).sort((a, b) => b.totalStems - a.totalStems);
-  }, [plannedQuantities, products]);
+  }, [plannedQuantities, products, recipes]);
 
   const totalUnits = Object.values(plannedQuantities).reduce((sum, qty) => sum + qty, 0);
   const totalStems = flowerNeeds.reduce((sum, need) => sum + Math.ceil(need.totalStems * 1.05), 0);
