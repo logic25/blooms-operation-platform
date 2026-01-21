@@ -36,21 +36,19 @@ const itemVariants = {
   visible: { opacity: 1, y: 0 },
 };
 
-function RatingStars({ rating }: { rating: number }) {
-  return (
-    <div className="flex gap-0.5">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <Star
-          key={star}
-          className={cn(
-            'h-3.5 w-3.5',
-            star <= rating ? 'fill-amber-400 text-amber-400' : 'text-muted'
-          )}
-        />
-      ))}
-    </div>
-  );
-}
+const RatingStars = ({ rating }: { rating: number }) => (
+  <div className="flex gap-0.5">
+    {[1, 2, 3, 4, 5].map((star) => (
+      <Star
+        key={star}
+        className={cn(
+          'h-3.5 w-3.5',
+          star <= rating ? 'fill-amber-400 text-amber-400' : 'text-muted'
+        )}
+      />
+    ))}
+  </div>
+);
 
 // Historical events list
 const events = ["Valentine's Day 2025", "Mother's Day 2025", "Valentine's Day 2024"];

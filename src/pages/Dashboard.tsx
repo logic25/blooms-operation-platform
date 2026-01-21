@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { format, differenceInDays, isBefore } from 'date-fns';
+import { format, differenceInDays } from 'date-fns';
 import {
   Package,
   Users,
@@ -10,15 +11,26 @@ import {
   Clock,
   AlertTriangle,
   Flower2,
+  X,
+  Phone,
+  ExternalLink,
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { mockProducts, mockVendors, mockDeadlines, mockProductionPlan } from '@/data/mockData';
-import { Link } from 'react-router-dom';
-import type { StatusType } from '@/types';
+import { Link, useNavigate } from 'react-router-dom';
+import type { StatusType, Deadline } from '@/types';
+import { toast } from 'sonner';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -41,11 +53,29 @@ const statusConfig: Record<StatusType, { color: string; icon: React.ElementType 
 };
 
 export default function Dashboard() {
+  const navigate = useNavigate();
+  const [selectedDeadline, setSelectedDeadline] = useState<Deadline | null>(null);
+  const [deadlineDialogOpen, setDeadlineDialogOpen] = useState(false);
+  
   const activePlan = mockProductionPlan;
   const daysUntilEvent = differenceInDays(activePlan.eventDate, new Date());
   const totalPlannedUnits = activePlan.items.reduce((sum, item) => sum + item.plannedQuantity, 0);
   const ordersPlaced = 2; // Mock data
   const totalOrders = 4;
+
+  const handleDeadlineClick = (deadline: Deadline) => {
+    setSelectedDeadline(deadline);
+    setDeadlineDialogOpen(true);
+  };
+
+  const handleMarkComplete = () => {
+    toast.success(`"${selectedDeadline?.title}" marked as complete!`);
+    setDeadlineDialogOpen(false);
+  };
+
+  const selectedVendor = selectedDeadline?.vendorName 
+    ? mockVendors.find(v => v.name === selectedDeadline.vendorName)
+    : null;
 
   return (
     <div className="p-4 lg:p-6">
@@ -111,7 +141,10 @@ export default function Dashboard() {
 
         {/* Stats Grid */}
         <motion.div variants={itemVariants} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card className="card-interactive border-border/50">
+          <Card 
+            className="card-interactive border-border/50 cursor-pointer"
+            onClick={() => navigate('/products')}
+          >
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sage-light">
@@ -130,7 +163,10 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          <Card className="card-interactive border-border/50">
+          <Card 
+            className="card-interactive border-border/50 cursor-pointer"
+            onClick={() => navigate('/vendors')}
+          >
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-peach-light">
@@ -144,7 +180,10 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          <Card className="card-interactive border-border/50">
+          <Card 
+            className="card-interactive border-border/50 cursor-pointer"
+            onClick={() => navigate('/planner')}
+          >
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-light">
@@ -158,7 +197,10 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          <Card className="card-interactive border-border/50">
+          <Card 
+            className="card-interactive border-border/50 cursor-pointer"
+            onClick={() => navigate('/orders')}
+          >
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
@@ -203,9 +245,10 @@ export default function Dashboard() {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.1 }}
                         className={cn(
-                          'flex items-center gap-4 rounded-xl border p-4 transition-all hover:bg-muted/50',
+                          'flex items-center gap-4 rounded-xl border p-4 transition-all cursor-pointer hover:bg-muted/50 hover:shadow-sm',
                           config.color
                         )}
+                        onClick={() => handleDeadlineClick(deadline)}
                       >
                         <div className={cn(
                           'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg',
@@ -304,6 +347,64 @@ export default function Dashboard() {
           </motion.div>
         </div>
       </motion.div>
+
+      {/* Deadline Detail Dialog */}
+      <Dialog open={deadlineDialogOpen} onOpenChange={setDeadlineDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl">{selectedDeadline?.title}</DialogTitle>
+            <DialogDescription>
+              {selectedDeadline && format(selectedDeadline.date, 'EEEE, MMMM d, yyyy')}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {selectedDeadline?.type === 'order' && selectedVendor && (
+              <div className="rounded-lg border p-4 space-y-3">
+                <p className="font-medium">Vendor Details</p>
+                <div className="space-y-2 text-sm">
+                  <p className="font-medium text-foreground">{selectedVendor.name}</p>
+                  {selectedVendor.contactInfo.phone && (
+                    <a 
+                      href={`tel:${selectedVendor.contactInfo.phone}`}
+                      className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+                    >
+                      <Phone className="h-4 w-4" />
+                      {selectedVendor.contactInfo.phone}
+                    </a>
+                  )}
+                  <p className="text-muted-foreground">
+                    Lead time: {selectedVendor.leadTimeDays} days • Cutoff: {selectedVendor.orderCutoff}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              {selectedDeadline?.type === 'order' && (
+                <>
+                  <Button className="flex-1 bg-primary hover:bg-primary/90" onClick={handleMarkComplete}>
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    Mark Order Placed
+                  </Button>
+                  <Button variant="outline" asChild>
+                    <Link to="/orders">
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      View Orders
+                    </Link>
+                  </Button>
+                </>
+              )}
+              {selectedDeadline?.type !== 'order' && (
+                <Button className="flex-1 bg-primary hover:bg-primary/90" onClick={handleMarkComplete}>
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  Mark Complete
+                </Button>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
