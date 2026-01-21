@@ -2,95 +2,123 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* Blooms Operations Platform Design System
+   A warm, nature-inspired palette for florist operations
 */
+
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Core backgrounds - warm cream tones */
+    --background: 40 33% 98%;
+    --foreground: 150 25% 15%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    /* Cards - soft white with warmth */
+    --card: 40 30% 99%;
+    --card-foreground: 150 25% 15%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    /* Popover */
+    --popover: 40 30% 99%;
+    --popover-foreground: 150 25% 15%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary - Sage green (calming, nature) */
+    --primary: 145 30% 42%;
+    --primary-foreground: 40 33% 98%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Secondary - Soft blush rose */
+    --secondary: 350 45% 92%;
+    --secondary-foreground: 350 40% 35%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Muted - Soft sage tint */
+    --muted: 140 15% 92%;
+    --muted-foreground: 150 15% 45%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Accent - Warm coral/peach */
+    --accent: 25 80% 92%;
+    --accent-foreground: 25 60% 35%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Destructive - Soft red for errors */
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* Borders & inputs */
+    --border: 140 15% 88%;
+    --input: 140 15% 88%;
+    --ring: 145 30% 42%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    --sidebar-background: 0 0% 98%;
+    /* Status colors */
+    --status-urgent: 0 75% 55%;
+    --status-warning: 45 90% 55%;
+    --status-success: 145 55% 45%;
+    --status-neutral: 140 10% 70%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    /* Extended palette */
+    --rose: 350 50% 65%;
+    --rose-light: 350 45% 92%;
+    --sage: 145 30% 42%;
+    --sage-light: 145 25% 88%;
+    --cream: 40 33% 98%;
+    --forest: 150 25% 15%;
+    --peach: 25 80% 75%;
+    --peach-light: 25 80% 92%;
 
-    --sidebar-primary: 240 5.9% 10%;
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(150 25% 15% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(150 25% 15% / 0.07), 0 2px 4px -2px hsl(150 25% 15% / 0.05);
+    --shadow-lg: 0 10px 15px -3px hsl(150 25% 15% / 0.08), 0 4px 6px -4px hsl(150 25% 15% / 0.05);
+    --shadow-card: 0 2px 8px -2px hsl(150 25% 15% / 0.08), 0 1px 3px hsl(150 25% 15% / 0.04);
 
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Sidebar */
+    --sidebar-background: 145 20% 97%;
+    --sidebar-foreground: 150 20% 30%;
+    --sidebar-primary: 145 30% 42%;
+    --sidebar-primary-foreground: 40 33% 98%;
+    --sidebar-accent: 145 25% 92%;
+    --sidebar-accent-foreground: 150 20% 25%;
+    --sidebar-border: 140 15% 90%;
+    --sidebar-ring: 145 30% 42%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 150 20% 10%;
+    --foreground: 40 20% 95%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 150 18% 13%;
+    --card-foreground: 40 20% 95%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 150 18% 13%;
+    --popover-foreground: 40 20% 95%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 145 35% 55%;
+    --primary-foreground: 150 20% 10%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 350 30% 20%;
+    --secondary-foreground: 350 45% 80%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 150 15% 18%;
+    --muted-foreground: 140 12% 60%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 25 50% 20%;
+    --accent-foreground: 25 80% 80%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 60% 45%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --border: 150 15% 20%;
+    --input: 150 15% 20%;
+    --ring: 145 35% 55%;
+
+    --sidebar-background: 150 18% 11%;
+    --sidebar-foreground: 140 15% 80%;
+    --sidebar-primary: 145 35% 55%;
+    --sidebar-primary-foreground: 150 20% 10%;
+    --sidebar-accent: 150 15% 18%;
+    --sidebar-accent-foreground: 140 15% 85%;
+    --sidebar-border: 150 15% 18%;
+    --sidebar-ring: 145 35% 55%;
   }
 }
 
@@ -100,6 +128,102 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', serif;
+  }
+}
+
+@layer components {
+  /* Status badge variants */
+  .status-urgent {
+    @apply bg-destructive/10 text-destructive border-destructive/20;
+  }
+  
+  .status-warning {
+    background-color: hsl(var(--status-warning) / 0.15);
+    color: hsl(45 80% 35%);
+    border-color: hsl(var(--status-warning) / 0.3);
+  }
+  
+  .status-success {
+    background-color: hsl(var(--status-success) / 0.15);
+    color: hsl(145 45% 30%);
+    border-color: hsl(var(--status-success) / 0.3);
+  }
+  
+  .status-neutral {
+    @apply bg-muted text-muted-foreground border-border;
+  }
+
+  /* Card hover effect */
+  .card-interactive {
+    @apply transition-all duration-200 ease-out;
+    box-shadow: var(--shadow-card);
+  }
+  
+  .card-interactive:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+  }
+
+  /* Gradient backgrounds */
+  .bg-gradient-sage {
+    background: linear-gradient(135deg, hsl(145 30% 42%) 0%, hsl(145 35% 50%) 100%);
+  }
+
+  .bg-gradient-rose {
+    background: linear-gradient(135deg, hsl(350 50% 65%) 0%, hsl(350 55% 72%) 100%);
+  }
+
+  .bg-gradient-warm {
+    background: linear-gradient(180deg, hsl(40 33% 98%) 0%, hsl(40 25% 95%) 100%);
+  }
+
+  /* Floral pattern overlay (subtle) */
+  .pattern-floral {
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23609966' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+}
+
+@layer utilities {
+  /* Smooth scrolling */
+  .scroll-smooth {
+    scroll-behavior: smooth;
+  }
+
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Animation utilities */
+  .animate-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Glass effect */
+  .glass {
+    background: hsl(var(--background) / 0.8);
+    backdrop-filter: blur(12px);
   }
 }
