@@ -17,8 +17,10 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
-import { mockVendors, mockVendorInventory, mockFlowerHistory } from '@/data/mockData';
+import { mockVendors as initialVendors, mockVendorInventory as initialInventory, mockFlowerHistory } from '@/data/mockData';
+import { VendorDialog } from '@/components/vendors/VendorDialog';
 import type { Vendor, VendorInventory } from '@/types';
+import { toast } from 'sonner';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -33,7 +35,7 @@ const itemVariants = {
   visible: { opacity: 1, y: 0 },
 };
 
-function RatingStars({ rating, size = 'sm' }: { rating: number; size?: 'sm' | 'md' }) {
+const RatingStars = ({ rating, size = 'sm' }: { rating: number; size?: 'sm' | 'md' }) => {
   const sizeClass = size === 'sm' ? 'h-3.5 w-3.5' : 'h-4 w-4';
   return (
     <div className="flex gap-0.5">
@@ -48,7 +50,7 @@ function RatingStars({ rating, size = 'sm' }: { rating: number; size?: 'sm' | 'm
       ))}
     </div>
   );
-}
+};
 
 function FlowerInventoryItem({ item }: { item: VendorInventory }) {
   const history = mockFlowerHistory.filter(h => h.flowerType === item.flowerType && h.vendorId === item.vendorId);
@@ -90,9 +92,15 @@ function FlowerInventoryItem({ item }: { item: VendorInventory }) {
   );
 }
 
-function VendorCard({ vendor }: { vendor: Vendor }) {
+interface VendorCardProps {
+  vendor: Vendor;
+  inventory: VendorInventory[];
+  onEdit: (vendor: Vendor) => void;
+  onDelete: (vendorId: string) => void;
+}
+
+function VendorCard({ vendor, inventory, onEdit, onDelete }: VendorCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const inventory = mockVendorInventory.filter(i => i.vendorId === vendor.id);
   const avgQuality = inventory.length > 0 
     ? (inventory.reduce((sum, i) => sum + i.qualityRating, 0) / inventory.length).toFixed(1)
     : 'N/A';
@@ -116,11 +124,14 @@ function VendorCard({ vendor }: { vendor: Vendor }) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onEdit(vendor)}>
                   <Edit2 className="mr-2 h-4 w-4" />
                   Edit Vendor
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-destructive">
+                <DropdownMenuItem 
+                  className="text-destructive"
+                  onClick={() => onDelete(vendor.id)}
+                >
                   <Trash2 className="mr-2 h-4 w-4" />
                   Delete
                 </DropdownMenuItem>
@@ -227,11 +238,72 @@ function VendorCard({ vendor }: { vendor: Vendor }) {
 
 export default function Vendors() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [vendors, setVendors] = useState<Vendor[]>(initialVendors);
+  const [vendorInventory, setVendorInventory] = useState<VendorInventory[]>(initialInventory);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
 
-  const filteredVendors = mockVendors.filter((vendor) =>
+  const filteredVendors = vendors.filter((vendor) =>
     vendor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     vendor.specialties?.some(s => s.toLowerCase().includes(searchQuery.toLowerCase()))
   );
+
+  const handleAddVendor = () => {
+    setEditingVendor(null);
+    setDialogOpen(true);
+  };
+
+  const handleEditVendor = (vendor: Vendor) => {
+    setEditingVendor(vendor);
+    setDialogOpen(true);
+  };
+
+  const handleDeleteVendor = (vendorId: string) => {
+    setVendors(prev => prev.filter(v => v.id !== vendorId));
+    setVendorInventory(prev => prev.filter(i => i.vendorId !== vendorId));
+    toast.success('Vendor deleted');
+  };
+
+  const handleSaveVendor = (
+    vendorData: Omit<Vendor, 'id'>, 
+    inventory: Omit<VendorInventory, 'id' | 'vendorId'>[]
+  ) => {
+    if (editingVendor) {
+      // Update existing vendor
+      setVendors(prev => prev.map(v => 
+        v.id === editingVendor.id ? { ...vendorData, id: editingVendor.id } : v
+      ));
+      // Update inventory
+      setVendorInventory(prev => {
+        const otherInventory = prev.filter(i => i.vendorId !== editingVendor.id);
+        const newInventory = inventory.map((item, index) => ({
+          ...item,
+          id: `vi-${editingVendor.id}-${index}`,
+          vendorId: editingVendor.id,
+        }));
+        return [...otherInventory, ...newInventory];
+      });
+      toast.success('Vendor updated');
+    } else {
+      // Add new vendor
+      const newVendorId = `v${Date.now()}`;
+      const newVendor: Vendor = { ...vendorData, id: newVendorId };
+      setVendors(prev => [...prev, newVendor]);
+      // Add inventory
+      const newInventory = inventory.map((item, index) => ({
+        ...item,
+        id: `vi-${newVendorId}-${index}`,
+        vendorId: newVendorId,
+      }));
+      setVendorInventory(prev => [...prev, ...newInventory]);
+      toast.success('Vendor added');
+    }
+    setDialogOpen(false);
+  };
+
+  const getVendorInventory = (vendorId: string) => {
+    return vendorInventory.filter(i => i.vendorId === vendorId);
+  };
 
   return (
     <div className="p-4 lg:p-6">
@@ -250,7 +322,7 @@ export default function Vendors() {
               Manage vendors and see which has the best flowers
             </p>
           </div>
-          <Button className="bg-primary hover:bg-primary/90">
+          <Button className="bg-primary hover:bg-primary/90" onClick={handleAddVendor}>
             <Plus className="mr-2 h-4 w-4" />
             Add Vendor
           </Button>
@@ -275,7 +347,13 @@ export default function Vendors() {
           className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2"
         >
           {filteredVendors.map((vendor) => (
-            <VendorCard key={vendor.id} vendor={vendor} />
+            <VendorCard 
+              key={vendor.id} 
+              vendor={vendor} 
+              inventory={getVendorInventory(vendor.id)}
+              onEdit={handleEditVendor}
+              onDelete={handleDeleteVendor}
+            />
           ))}
         </motion.div>
 
@@ -290,6 +368,15 @@ export default function Vendors() {
             </p>
           </div>
         )}
+
+        {/* Vendor Dialog */}
+        <VendorDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          vendor={editingVendor}
+          inventory={editingVendor ? getVendorInventory(editingVendor.id) : []}
+          onSave={handleSaveVendor}
+        />
       </motion.div>
     </div>
   );
