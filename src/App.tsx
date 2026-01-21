@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { AppModeProvider } from "@/context/AppModeContext";
+import { OnboardingProvider, useOnboarding } from "@/context/OnboardingContext";
+import { OnboardingFlow } from "@/components/onboarding/OnboardingFlow";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
 import Vendors from "./pages/Vendors";
@@ -16,28 +18,46 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+function AppContent() {
+  const { hasCompletedOnboarding, setHasCompletedOnboarding } = useOnboarding();
+
+  if (!hasCompletedOnboarding) {
+    return (
+      <OnboardingFlow 
+        onComplete={() => setHasCompletedOnboarding(true)} 
+      />
+    );
+  }
+
+  return (
+    <AppModeProvider>
+      <BrowserRouter>
+        <AppLayout>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/products" element={<Products />} />
+            <Route path="/vendors" element={<Vendors />} />
+            <Route path="/planner" element={<Planner />} />
+            <Route path="/orders" element={<Orders />} />
+            <Route path="/history" element={<History />} />
+            <Route path="/settings" element={<Settings />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AppLayout>
+      </BrowserRouter>
+    </AppModeProvider>
+  );
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <AppModeProvider>
+      <OnboardingProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
-          <AppLayout>
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/products" element={<Products />} />
-              <Route path="/vendors" element={<Vendors />} />
-              <Route path="/planner" element={<Planner />} />
-              <Route path="/orders" element={<Orders />} />
-              <Route path="/history" element={<History />} />
-              <Route path="/settings" element={<Settings />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </AppLayout>
-        </BrowserRouter>
-      </AppModeProvider>
+        <AppContent />
+      </OnboardingProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
