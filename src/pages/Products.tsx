@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Search, Filter, Grid3X3, List, MoreHorizontal, Edit2, Archive, Copy, Trash2, Eye } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -148,8 +148,37 @@ function ProductCard({ product, recipe, onEdit, onDuplicate, onArchive, onDelete
 }
 
 export default function Products() {
-  const [products, setProducts] = useState<Product[]>(initialProducts);
-  const [recipes, setRecipes] = useState<Record<string, RecipeItem[]>>(initialRecipes);
+  // Load products from localStorage or fall back to mock data
+  const [products, setProducts] = useState<Product[]>(() => {
+    const saved = localStorage.getItem('blooms_products');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return parsed.map((p: Product) => ({
+          ...p,
+          createdAt: new Date(p.createdAt),
+          updatedAt: new Date(p.updatedAt),
+        }));
+      } catch {
+        return initialProducts;
+      }
+    }
+    return initialProducts;
+  });
+
+  // Load recipes from localStorage or fall back to mock data
+  const [recipes, setRecipes] = useState<Record<string, RecipeItem[]>>(() => {
+    const saved = localStorage.getItem('blooms_recipes');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return initialRecipes;
+      }
+    }
+    return initialRecipes;
+  });
+
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -161,6 +190,16 @@ export default function Products() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
+
+  // Persist products to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('blooms_products', JSON.stringify(products));
+  }, [products]);
+
+  // Persist recipes to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('blooms_recipes', JSON.stringify(recipes));
+  }, [recipes]);
 
   const filteredProducts = products.filter((product) => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
