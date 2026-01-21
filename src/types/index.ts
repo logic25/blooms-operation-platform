@@ -4,7 +4,7 @@ export interface Product {
   id: string;
   name: string;
   photoUrl?: string;
-  category: 'roses' | 'mixed' | 'premium' | 'budget' | 'seasonal';
+  category: 'birthday' | 'romance' | 'sympathy' | 'everyday' | 'wedding' | 'corporate';
   price: number;
   isActive: boolean;
   createdAt: Date;
@@ -22,6 +22,17 @@ export interface RecipeItem {
 export interface Recipe {
   productId: string;
   items: RecipeItem[];
+}
+
+// ===== FLOWER LIBRARY =====
+export interface FlowerType {
+  id: string;
+  name: string;
+  category: 'roses' | 'fillers' | 'greens' | 'specialty';
+  costPerStem: number;
+  stemsPerBunch: number;
+  isActive: boolean;
+  notes?: string;
 }
 
 export interface Vendor {
@@ -100,7 +111,7 @@ export interface SalesHistory {
   revenue?: number;
 }
 
-// ===== NEW TYPES FOR DUAL-MODE SYSTEM =====
+// ===== DUAL-MODE SYSTEM =====
 
 // App mode
 export type AppMode = 'daily' | 'event';
@@ -111,9 +122,11 @@ export interface DailyOrder {
   productId: string;
   quantity: number;
   deliveryDate: Date;
+  deliveryTime?: string;
   customerName?: string;
+  customerPhone?: string;
   notes?: string;
-  status: 'pending' | 'fulfilled';
+  status: 'pending' | 'in_production' | 'fulfilled';
   createdAt: Date;
   eventId?: string; // if associated with an event
 }
@@ -133,6 +146,8 @@ export interface ShoppingListItem {
   inStock: number;
   toBuy: number;
   purchased: boolean;
+  suggestedVendor?: string;
+  suggestedPrice?: number;
 }
 
 // Custom event configuration
@@ -144,6 +159,7 @@ export interface CustomEvent {
   isActive: boolean;
   isRecurring: boolean;
   recurrenceRule?: string; // e.g., "2nd Sunday of May"
+  status?: 'planning' | 'ordering' | 'production' | 'completed';
 }
 
 // Expected delivery (flowers ordered but not yet received)
@@ -158,11 +174,21 @@ export interface ExpectedDelivery {
   eventId?: string;
 }
 
-// User preferences
+// ===== USER & ONBOARDING =====
+
 export interface UserPreferences {
   currentMode: AppMode;
   activeEventId?: string;
   defaultPlanningWindow: number;
+  hasCompletedOnboarding: boolean;
+}
+
+export interface OnboardingState {
+  step: number;
+  flowers: FlowerType[];
+  vendors: Vendor[];
+  products: Product[];
+  recipes: Record<string, RecipeItem[]>;
 }
 
 // UI-specific types
@@ -175,4 +201,15 @@ export interface Deadline {
   type: 'order' | 'delivery' | 'production' | 'event';
   status: StatusType;
   vendorName?: string;
+}
+
+// ===== DELIVERY TRACKING =====
+export interface Delivery {
+  id: string;
+  flowerType: string;
+  quantityStems: number;
+  receivedDate: Date;
+  vendorId?: string;
+  costTotal?: number;
+  notes?: string;
 }
