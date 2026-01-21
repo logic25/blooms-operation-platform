@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Plus, Search, Flower2, Edit2, Trash2, Check, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, Search, Flower2, Edit2, Trash2, Check, X, ChevronDown, ChevronRight, Star, DollarSign, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -16,10 +16,16 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -29,8 +35,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 import type { FlowerType } from '@/types';
 import { defaultFlowers } from '@/data/defaultFlowers';
+import { mockVendorInventory, mockVendors } from '@/data/mockData';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -72,6 +80,38 @@ function getFlowerEmoji(name: string): string {
   return flowerEmojis.default;
 }
 
+function RatingStars({ rating }: { rating: number }) {
+  return (
+    <div className="flex gap-0.5">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <Star
+          key={star}
+          className={cn(
+            'h-3 w-3',
+            star <= rating ? 'fill-amber-400 text-amber-400' : 'text-muted'
+          )}
+        />
+      ))}
+    </div>
+  );
+}
+
+// Get vendor pricing for a specific flower
+function getVendorPricing(flowerName: string) {
+  return mockVendorInventory
+    .filter(inv => inv.flowerType.toLowerCase().includes(flowerName.toLowerCase()) || 
+                   flowerName.toLowerCase().includes(inv.flowerType.toLowerCase()))
+    .map(inv => {
+      const vendor = mockVendors.find(v => v.id === inv.vendorId);
+      return {
+        ...inv,
+        vendorName: vendor?.name || 'Unknown Vendor',
+        leadTime: vendor?.leadTimeDays || 0,
+      };
+    })
+    .sort((a, b) => a.regularPrice - b.regularPrice);
+}
+
 export default function Flowers() {
   const { toast } = useToast();
   const [flowers, setFlowers] = useState<FlowerType[]>([]);
@@ -80,6 +120,7 @@ export default function Flowers() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<{ costPerStem: number; stemsPerBunch: number }>({ costPerStem: 0, stemsPerBunch: 0 });
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [expandedFlowers, setExpandedFlowers] = useState<Set<string>>(new Set());
   const [newFlower, setNewFlower] = useState<Partial<FlowerType>>({
     name: '',
     category: 'roses',
@@ -160,6 +201,18 @@ export default function Flowers() {
     toast({ title: 'Flower added', description: `${flower.name} has been added to your library.` });
   };
 
+  const toggleExpanded = (id: string) => {
+    setExpandedFlowers(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
   return (
     <div className="p-4 lg:p-6">
       <motion.div
@@ -175,7 +228,7 @@ export default function Flowers() {
               Flower Library
             </h1>
             <p className="text-sm text-muted-foreground">
-              Manage your flower types, costs, and bunch sizes
+              Manage your flower types, costs, and compare vendor pricing
             </p>
           </div>
           <Button onClick={() => setDialogOpen(true)} className="bg-primary hover:bg-primary/90">
@@ -224,79 +277,173 @@ export default function Flowers() {
                 <Flower2 className="h-5 w-5 text-primary" />
                 {filteredFlowers.length} Flower Types
               </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Click the arrow to expand and see vendor pricing comparison
+              </p>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12"></TableHead>
-                    <TableHead>Flower Name</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead className="text-right">Cost/Stem</TableHead>
-                    <TableHead className="text-right">Stems/Bunch</TableHead>
-                    <TableHead className="w-24">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredFlowers.map(flower => (
-                    <TableRow key={flower.id}>
-                      <TableCell className="text-xl">{getFlowerEmoji(flower.name)}</TableCell>
-                      <TableCell className="font-medium">{flower.name}</TableCell>
-                      <TableCell>
-                        <Badge className={categoryColors[flower.category] || 'bg-muted text-muted-foreground'}>
-                          {flower.category}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {editingId === flower.id ? (
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={editValues.costPerStem}
-                            onChange={(e) => setEditValues(prev => ({ ...prev, costPerStem: parseFloat(e.target.value) || 0 }))}
-                            className="w-20 text-right h-8"
-                          />
-                        ) : (
-                          `$${flower.costPerStem.toFixed(2)}`
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {editingId === flower.id ? (
-                          <Input
-                            type="number"
-                            value={editValues.stemsPerBunch}
-                            onChange={(e) => setEditValues(prev => ({ ...prev, stemsPerBunch: parseInt(e.target.value) || 0 }))}
-                            className="w-16 text-right h-8"
-                          />
-                        ) : (
-                          flower.stemsPerBunch
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {editingId === flower.id ? (
-                          <div className="flex gap-1">
-                            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleSaveEdit(flower.id)}>
-                              <Check className="h-4 w-4 text-green-600" />
+              <div className="space-y-2">
+                {filteredFlowers.map(flower => {
+                  const isExpanded = expandedFlowers.has(flower.id);
+                  const vendorPricing = getVendorPricing(flower.name);
+                  
+                  return (
+                    <Collapsible key={flower.id} open={isExpanded} onOpenChange={() => toggleExpanded(flower.id)}>
+                      <div className={cn(
+                        'rounded-lg border transition-colors',
+                        isExpanded && 'border-primary/50 bg-primary/5'
+                      )}>
+                        {/* Main Row */}
+                        <div className="flex items-center gap-3 p-3">
+                          <CollapsibleTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                              {isExpanded ? (
+                                <ChevronDown className="h-4 w-4" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4" />
+                              )}
                             </Button>
-                            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={handleCancelEdit}>
-                              <X className="h-4 w-4 text-red-600" />
-                            </Button>
+                          </CollapsibleTrigger>
+                          
+                          <span className="text-xl shrink-0">{getFlowerEmoji(flower.name)}</span>
+                          
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">{flower.name}</p>
+                            <Badge className={cn('text-xs', categoryColors[flower.category] || 'bg-muted text-muted-foreground')}>
+                              {flower.category}
+                            </Badge>
                           </div>
-                        ) : (
-                          <div className="flex gap-1">
-                            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleStartEdit(flower)}>
-                              <Edit2 className="h-4 w-4" />
-                            </Button>
-                            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleDelete(flower.id)}>
-                              <Trash2 className="h-4 w-4 text-red-600" />
-                            </Button>
-                          </div>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                          
+                          {editingId === flower.id ? (
+                            <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-1">
+                                <span className="text-xs text-muted-foreground">$/stem:</span>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  value={editValues.costPerStem}
+                                  onChange={(e) => setEditValues(prev => ({ ...prev, costPerStem: parseFloat(e.target.value) || 0 }))}
+                                  className="w-20 text-right h-8"
+                                />
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <span className="text-xs text-muted-foreground">stems/bunch:</span>
+                                <Input
+                                  type="number"
+                                  value={editValues.stemsPerBunch}
+                                  onChange={(e) => setEditValues(prev => ({ ...prev, stemsPerBunch: parseInt(e.target.value) || 0 }))}
+                                  className="w-16 text-right h-8"
+                                />
+                              </div>
+                              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleSaveEdit(flower.id)}>
+                                <Check className="h-4 w-4 text-green-600" />
+                              </Button>
+                              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={handleCancelEdit}>
+                                <X className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="text-right shrink-0">
+                                <p className="font-medium">${flower.costPerStem.toFixed(2)}/stem</p>
+                                <p className="text-xs text-muted-foreground">{flower.stemsPerBunch} stems/bunch</p>
+                              </div>
+                              
+                              {vendorPricing.length > 0 && (
+                                <Badge variant="secondary" className="bg-sage-light text-sage shrink-0">
+                                  <Building2 className="h-3 w-3 mr-1" />
+                                  {vendorPricing.length} vendors
+                                </Badge>
+                              )}
+                              
+                              <div className="flex gap-1 shrink-0">
+                                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleStartEdit(flower)}>
+                                  <Edit2 className="h-4 w-4" />
+                                </Button>
+                                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleDelete(flower.id)}>
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+
+                        {/* Collapsible Vendor Pricing */}
+                        <CollapsibleContent>
+                          <AnimatePresence>
+                            {isExpanded && (
+                              <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="border-t px-3 py-2 bg-muted/30"
+                              >
+                                {vendorPricing.length === 0 ? (
+                                  <p className="text-sm text-muted-foreground py-2">
+                                    No vendors carry this flower yet. Add vendor inventory in the Vendors tab.
+                                  </p>
+                                ) : (
+                                  <div className="space-y-2">
+                                    <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                                      <DollarSign className="h-3 w-3" />
+                                      Vendor Pricing Comparison
+                                    </p>
+                                    <Table>
+                                      <TableHeader>
+                                        <TableRow className="hover:bg-transparent">
+                                          <TableHead className="py-2">Vendor</TableHead>
+                                          <TableHead className="text-center py-2">Regular Price</TableHead>
+                                          <TableHead className="text-center py-2">Peak Price</TableHead>
+                                          <TableHead className="text-center py-2">Quality</TableHead>
+                                          <TableHead className="text-center py-2">Lead Time</TableHead>
+                                          <TableHead className="py-2">Notes</TableHead>
+                                        </TableRow>
+                                      </TableHeader>
+                                      <TableBody>
+                                        {vendorPricing.map((vp, idx) => (
+                                          <TableRow key={vp.id} className={idx === 0 ? 'bg-emerald-50/50' : ''}>
+                                            <TableCell className="py-2">
+                                              <div className="flex items-center gap-2">
+                                                {idx === 0 && (
+                                                  <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 text-xs">
+                                                    Best Price
+                                                  </Badge>
+                                                )}
+                                                <span className="font-medium">{vp.vendorName}</span>
+                                              </div>
+                                            </TableCell>
+                                            <TableCell className="text-center py-2">
+                                              ${vp.regularPrice.toFixed(2)}
+                                            </TableCell>
+                                            <TableCell className="text-center py-2 font-medium text-rose">
+                                              ${vp.peakPrice.toFixed(2)}
+                                            </TableCell>
+                                            <TableCell className="py-2">
+                                              <div className="flex items-center justify-center">
+                                                <RatingStars rating={vp.qualityRating} />
+                                              </div>
+                                            </TableCell>
+                                            <TableCell className="text-center py-2 text-muted-foreground">
+                                              {vp.leadTime}d
+                                            </TableCell>
+                                            <TableCell className="py-2 text-sm text-muted-foreground max-w-[200px] truncate">
+                                              {vp.notes}
+                                            </TableCell>
+                                          </TableRow>
+                                        ))}
+                                      </TableBody>
+                                    </Table>
+                                  </div>
+                                )}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </CollapsibleContent>
+                      </div>
+                    </Collapsible>
+                  );
+                })}
+              </div>
             </CardContent>
           </Card>
         </motion.div>
@@ -307,6 +454,9 @@ export default function Flowers() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add New Flower Type</DialogTitle>
+            <DialogDescription>
+              Add a new flower to your library. You can set vendor pricing in the Vendors tab.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
