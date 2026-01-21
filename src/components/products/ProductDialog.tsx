@@ -30,17 +30,18 @@ interface ProductDialogProps {
 }
 
 const categories = [
-  { value: 'roses', label: 'Roses' },
-  { value: 'mixed', label: 'Mixed' },
-  { value: 'premium', label: 'Premium' },
-  { value: 'budget', label: 'Budget' },
-  { value: 'seasonal', label: 'Seasonal' },
+  { value: 'birthday', label: 'Birthday' },
+  { value: 'romance', label: 'Romance' },
+  { value: 'sympathy', label: 'Sympathy' },
+  { value: 'everyday', label: 'Everyday' },
+  { value: 'wedding', label: 'Wedding' },
+  { value: 'corporate', label: 'Corporate' },
 ];
 
 export function ProductDialog({ open, onOpenChange, product, onSave }: ProductDialogProps) {
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
-  const [category, setCategory] = useState<Product['category']>('mixed');
+  const [category, setCategory] = useState<Product['category']>('everyday');
   const [photoUrl, setPhotoUrl] = useState('');
   const [isActive, setIsActive] = useState(true);
 
@@ -54,7 +55,7 @@ export function ProductDialog({ open, onOpenChange, product, onSave }: ProductDi
     } else {
       setName('');
       setPrice('');
-      setCategory('mixed');
+      setCategory('everyday');
       setPhotoUrl('');
       setIsActive(true);
     }
