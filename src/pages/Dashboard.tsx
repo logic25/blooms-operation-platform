@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ModeToggle } from '@/components/dashboard/ModeToggle';
 import { EventBanner } from '@/components/dashboard/EventBanner';
 import { UpcomingOrders } from '@/components/dashboard/UpcomingOrders';
-import { CoolerInventory } from '@/components/dashboard/CoolerInventory';
+import { AvailableInventory } from '@/components/dashboard/AvailableInventory';
 import { ShoppingList } from '@/components/dashboard/ShoppingList';
 import { QuickOrderDialog } from '@/components/dashboard/QuickOrderDialog';
 import { useAppMode } from '@/context/AppModeContext';
@@ -79,9 +79,9 @@ export default function Dashboard() {
             <UpcomingOrders />
           </motion.div>
 
-          {/* Center Column - Inventory */}
+          {/* Center Column - Available Inventory */}
           <motion.div variants={itemVariants} className="lg:col-span-3">
-            <CoolerInventory />
+            <AvailableInventory />
           </motion.div>
 
           {/* Right Column - Shopping List */}

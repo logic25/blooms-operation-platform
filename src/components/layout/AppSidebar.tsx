@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import {
   CalendarDays,
   ShoppingCart,
+  Truck,
   Package,
   Flower2,
   Users,
@@ -26,7 +27,8 @@ import {
 
 const navItems = [
   { title: 'Today', url: '/', icon: CalendarDays },
-  { title: 'Orders', url: '/orders', icon: ShoppingCart },
+  { title: 'Customer Orders', url: '/orders', icon: ShoppingCart },
+  { title: 'Vendor Orders', url: '/vendor-orders', icon: Truck },
   { title: 'Products', url: '/products', icon: Package },
   { title: 'Flowers', url: '/flowers', icon: Flower2 },
   { title: 'Vendors', url: '/vendors', icon: Users },
