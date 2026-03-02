@@ -71,7 +71,7 @@ export function AvailableInventory() {
   };
 
   return (
-    <Card className="border-border/50">
+    <Card className="border-border/50 h-full flex flex-col">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div>
@@ -99,7 +99,7 @@ export function AvailableInventory() {
           </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1 flex flex-col">
         {/* Record Delivery Button */}
         <Dialog open={deliveryDialogOpen} onOpenChange={setDeliveryDialogOpen}>
           <DialogTrigger asChild>
@@ -191,7 +191,7 @@ export function AvailableInventory() {
         </Dialog>
 
         {/* Inventory List */}
-        <div className="space-y-2 max-h-[350px] overflow-y-auto pr-1">
+        <div className="space-y-2 flex-1 overflow-y-auto pr-1">
           {inventoryData.length === 0 ? (
             <div className="text-center py-6 text-muted-foreground">
               <Package className="h-10 w-10 mx-auto mb-2 opacity-50" />

@@ -70,7 +70,7 @@ export function UpcomingOrders() {
   ];
 
   return (
-    <Card className="border-border/50">
+    <Card className="border-border/50 h-full">
       <CardHeader className="pb-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
