@@ -145,8 +145,8 @@ export function ShoppingList() {
               </Button>
             </div>
 
-            {/* Items to buy */}
-            <div className="space-y-2">
+            {/* Items to buy - multi-column grid on wide screens */}
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
               {unpurchasedItems.map((item, index) => (
                 <motion.div
                   key={item.flowerType}
@@ -192,7 +192,7 @@ export function ShoppingList() {
             {purchasedItems.length > 0 && (
               <div className="mt-4 pt-4 border-t">
                 <p className="text-sm text-muted-foreground mb-2">Purchased</p>
-                <div className="space-y-2">
+                <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                   {purchasedItems.map(item => (
                     <div
                       key={item.flowerType}

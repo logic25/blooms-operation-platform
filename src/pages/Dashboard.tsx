@@ -74,18 +74,17 @@ export default function Dashboard() {
 
         {/* Main Grid */}
         <div className="grid gap-6 lg:grid-cols-12">
-          {/* Left Column - Orders */}
-          <motion.div variants={itemVariants} className="lg:col-span-5">
+          {/* Row 1: Orders + Inventory */}
+          <motion.div variants={itemVariants} className="lg:col-span-7">
             <UpcomingOrders />
           </motion.div>
 
-          {/* Center Column - Available Inventory */}
-          <motion.div variants={itemVariants} className="lg:col-span-3">
+          <motion.div variants={itemVariants} className="lg:col-span-5">
             <AvailableInventory />
           </motion.div>
 
-          {/* Right Column - Shopping List */}
-          <motion.div variants={itemVariants} className="lg:col-span-4">
+          {/* Row 2: Shopping List - full width */}
+          <motion.div variants={itemVariants} className="lg:col-span-12">
             <ShoppingList />
           </motion.div>
         </div>
